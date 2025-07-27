@@ -7,7 +7,7 @@
 #define ever ;;
 #define SCREEN_SIZE 800
 
-#define PIXEL_SIZE 32
+#define PIXEL_SIZE 50
 
 #if PIXEL_SIZE > 1
 void DRAW_CELL(struct screenPackage screen, int x, int y, color c) {
@@ -85,7 +85,7 @@ void updateBoard(uint8_t cells[BOARD_SIZE+2][BOARD_SIZE+2], uint8_t neighborCoun
     
     // Update board based on neighbor count
     // Can be modeled with each cell as a latch with a data line and a latch signal.
-    // 2 neighbors means don't latch (keep state), 3 neighbors means set data line to 1.
+    // 2 live neighbors means don't latch (keep state), 3 neighbors means set data line to 1.
 
     for (x = 1; x < BOARD_SIZE + 1; x++) {
         for (y = 1; y < BOARD_SIZE + 1; y++) {
