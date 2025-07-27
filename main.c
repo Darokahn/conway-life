@@ -5,9 +5,9 @@
 #include <signal.h>
 
 #define ever ;;
-#define SCREEN_SIZE 800
+#define SCREEN_SIZE 900
 
-#define PIXEL_SIZE 50
+#define PIXEL_SIZE 30
 
 #if PIXEL_SIZE > 1
 void DRAW_CELL(struct screenPackage screen, int x, int y, color c) {
@@ -96,7 +96,7 @@ void updateBoard(uint8_t cells[BOARD_SIZE+2][BOARD_SIZE+2], uint8_t neighborCoun
                 cells[x][y] = dataLine;
             }
             neighborCounts[x][y] = 0;
-            DRAW_CELL(screen, x, y, ((color) {255 * cells[x][y], 255 * cells[x][y], 255 * cells[x][y]}));
+            DRAW_CELL(screen, x, y, ((color) {255 * cells[x][y], 255 * cells[x][y], 255 * cells[x][y], 255}));
         }
     }
 }
@@ -127,7 +127,7 @@ placing:
                 y++;
                 thisCell = !cells[x][y];
                 cells[x][y] = thisCell;
-                DRAW_CELL(screen, x, y, ((color) {255 * thisCell, 255 * thisCell, 255 * thisCell}));
+                DRAW_CELL(screen, x, y, ((color) {255 * thisCell, 255 * thisCell, 255 * thisCell, 255}));
                 updateScreen(screen);
             }
             else if (e.type == SDL_KEYDOWN) {

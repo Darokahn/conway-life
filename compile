@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sdl2-config --version > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "SDL2 is installed; compilation should be successful."
+else
+    echo "SDL2 is not installed; likely failure but attempting anyway."
+fi
+
+gcc main.c sdl_wrapper.c -lSDL2
