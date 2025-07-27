@@ -2,9 +2,26 @@
 #include <stdint.h>
 #include <time.h>
 #include "sdl_wrapper.h"
+#include <signal.h>
 
 #define ever ;;
-#define BOARD_SIZE 256
+#define SCREEN_SIZE 800
+
+#define PIXEL_SIZE 32
+
+#if PIXEL_SIZE > 1
+void DRAW_CELL(struct screenPackage screen, int x, int y, color c) {
+    x -= 1;
+    y -= 1;
+    x *= PIXEL_SIZE;
+    y *= PIXEL_SIZE;
+    drawRect(screen, (rectangle) {x, y, PIXEL_SIZE, PIXEL_SIZE}, c);
+}
+#else
+#define DRAW_CELL(screen, x, y, color) setPixel(screen, (point) {x, y}, color)
+#endif
+
+#define BOARD_SIZE (SCREEN_SIZE / PIXEL_SIZE)
 
 void sleepMillis(int millis) {
     struct timespec t;
@@ -19,8 +36,8 @@ uint8_t neighborCounts[BOARD_SIZE+2][BOARD_SIZE+2]; // enable buffer 0 space out
 void printNeighbors() {
     int x;
     int y;
-    for (x = 1; x < BOARD_SIZE + 1; x++) {
-        for (y = 1; y < BOARD_SIZE + 1; y++) {
+    for (y = 1; y < BOARD_SIZE + 1; y++) {
+        for (x = 1; x < BOARD_SIZE + 1; x++) {
             putchar(neighborCounts[x][y] + '0');
             putchar(' ');
         }
@@ -32,8 +49,8 @@ void printNeighbors() {
 void printCells() {
     int x;
     int y;
-    for (x = 1; x < BOARD_SIZE + 1; x++) {
-        for (y = 1; y < BOARD_SIZE + 1; y++) {
+    for (y = 1; y < BOARD_SIZE + 1; y++) {
+        for (x = 1; x < BOARD_SIZE + 1; x++) {
             putchar(cells[x][y] + '0');
             putchar(' ');
         }
@@ -65,42 +82,79 @@ void updateBoard(uint8_t cells[BOARD_SIZE+2][BOARD_SIZE+2], uint8_t neighborCoun
             neighborCounts[x+1][y+1] += occupied;
         }
     }
-
-    // update board based on neighbor count
+    
+    // Update board based on neighbor count
+    // Can be modeled with each cell as a latch with a data line and a latch signal.
+    // 2 neighbors means don't latch (keep state), 3 neighbors means set data line to 1.
 
     for (x = 1; x < BOARD_SIZE + 1; x++) {
         for (y = 1; y < BOARD_SIZE + 1; y++) {
             count = neighborCounts[x][y];
             dataLine = count == 3;
             latch = count != 2;
-            // only branch
             if (latch) {
                 cells[x][y] = dataLine;
             }
             neighborCounts[x][y] = 0;
-            setPixel(screen, (point) {x, y}, (color) {255 * cells[x][y], 255 * cells[x][y], 255 * cells[x][y]});
+            DRAW_CELL(screen, x, y, ((color) {255 * cells[x][y], 255 * cells[x][y], 255 * cells[x][y]}));
         }
     }
 }
 
-int main() {
-    struct screenPackage screen = initVideo(BOARD_SIZE, BOARD_SIZE);
+int main(int argc, char** argv) {
+    signal(SIGINT, exit);
+    struct screenPackage screen = initVideo(SCREEN_SIZE, SCREEN_SIZE);
     int x;
     int y;
     for (x = 0; x < BOARD_SIZE + 2; x++) {
-        for (y = 0; y < BOARD_SIZE + 2; y++) {
+        for (y = 0; y < BOARD_SIZE + 1; y++) {
             cells[x][y] = 0;
             neighborCounts[x][y] = 0;
         }
     }
-    cells[5][5] = 1;
-    cells[5][6] = 1;
-    cells[3][6] = 1;
-    cells[5][7] = 1;
-    cells[4][7] = 1;
+    SDL_Event e;
+    SDL_MouseButtonEvent* mousedown = &e;
+    SDL_KeyboardEvent* keydown = &e;
+    int placing;
+    int thisCell;
+placing:
+    placing = 1;
+    updateScreen(screen);
+    while (placing) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                x = mousedown->x / PIXEL_SIZE;
+                y = mousedown->y / PIXEL_SIZE;
+                x++;
+                y++;
+                thisCell = !cells[x][y];
+                cells[x][y] = thisCell;
+                DRAW_CELL(screen, x, y, ((color) {255 * thisCell, 255 * thisCell, 255 * thisCell}));
+                updateScreen(screen);
+            }
+            else if (e.type == SDL_KEYDOWN) {
+                if (keydown->keysym.scancode == SDL_SCANCODE_RETURN || keydown->keysym.scancode == SDL_SCANCODE_SPACE) {
+                    placing = 0;
+                }
+                else if (e.type == SDL_QUIT) {
+                    exit(0);
+                }
+            }
+        }
+    }
     for(ever) {
-        updateBoard(cells, neighborCounts, screen);
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                exit(0);
+            }
+            else if (e.type == SDL_KEYDOWN) {
+                if (keydown->keysym.scancode == SDL_SCANCODE_RETURN || keydown->keysym.scancode == SDL_SCANCODE_SPACE) {
+                    goto placing; // sorry
+                }
+            }
+        }
         updateScreen(screen);
-        // sleepMillis(100);
+        updateBoard(cells, neighborCounts, screen);
+        sleepMillis(100);
     }
 }
