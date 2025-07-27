@@ -18,7 +18,7 @@ void DRAW_CELL(struct screenPackage screen, int x, int y, color c) {
     drawRect(screen, (rectangle) {x, y, PIXEL_SIZE, PIXEL_SIZE}, c);
 }
 #else
-#define DRAW_CELL(screen, x, y, color) setPixel(screen, (point) {x, y}, color)
+#define DRAW_CELL(screen, x-1, y-1, color) setPixel(screen, (point) {x, y}, color)
 #endif
 
 #define BOARD_SIZE (SCREEN_SIZE / PIXEL_SIZE)
@@ -113,8 +113,6 @@ int main(int argc, char** argv) {
         }
     }
     SDL_Event e;
-    SDL_MouseButtonEvent* mousedown = &e;
-    SDL_KeyboardEvent* keydown = &e;
     int placing;
     int thisCell;
 placing:
@@ -123,8 +121,8 @@ placing:
     while (placing) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_MOUSEBUTTONDOWN) {
-                x = mousedown->x / PIXEL_SIZE;
-                y = mousedown->y / PIXEL_SIZE;
+                x = e.button.x / PIXEL_SIZE;
+                y = e.button.y / PIXEL_SIZE;
                 x++;
                 y++;
                 thisCell = !cells[x][y];
@@ -133,12 +131,12 @@ placing:
                 updateScreen(screen);
             }
             else if (e.type == SDL_KEYDOWN) {
-                if (keydown->keysym.scancode == SDL_SCANCODE_RETURN || keydown->keysym.scancode == SDL_SCANCODE_SPACE) {
+                if (e.key.keysym.scancode == SDL_SCANCODE_RETURN || e.key.keysym.scancode == SDL_SCANCODE_SPACE) {
                     placing = 0;
                 }
-                else if (e.type == SDL_QUIT) {
-                    exit(0);
-                }
+            }
+            else if (e.type == SDL_QUIT) {
+                exit(0);
             }
         }
     }
@@ -148,7 +146,7 @@ placing:
                 exit(0);
             }
             else if (e.type == SDL_KEYDOWN) {
-                if (keydown->keysym.scancode == SDL_SCANCODE_RETURN || keydown->keysym.scancode == SDL_SCANCODE_SPACE) {
+                if (e.key.keysym.scancode == SDL_SCANCODE_RETURN || e.key.keysym.scancode == SDL_SCANCODE_SPACE) {
                     goto placing; // sorry
                 }
             }
